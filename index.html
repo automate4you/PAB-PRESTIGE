@@ -167,6 +167,48 @@
   }
   textarea{resize:vertical; min-height:76px; line-height:1.5;}
 
+  /* date & heure — pickers custom cliquables sur toute la surface du champ */
+  .picker-wrap{position:relative;}
+  .picker-wrap input{cursor:pointer; caret-color:transparent; padding-right:38px;}
+  .picker-icon{
+    position:absolute; right:13px; top:50%; transform:translateY(-50%);
+    width:16px; height:16px; color:rgba(255,255,255,0.45); pointer-events:none;
+  }
+  .cal-dropdown, .time-dropdown{
+    display:none; position:absolute; left:0; top:calc(100% + 6px);
+    background:var(--navy-850); border:1.5px solid rgba(255,255,255,0.14);
+    border-radius:14px; z-index:50; box-shadow:0 16px 32px -12px rgba(0,0,0,0.5);
+    padding:14px; width:250px;
+  }
+  .cal-dropdown.open, .time-dropdown.open{display:block;}
+  .time-dropdown{left:auto; right:0;}
+  .cal-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+  .cal-header button{background:none; border:none; color:#fff; font-size:18px; line-height:1; cursor:pointer; padding:2px 8px;}
+  .cal-header span{font-family:'Poppins',sans-serif; font-weight:700; font-size:13px; color:#fff;}
+  .cal-weekdays{display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:4px;}
+  .cal-weekdays span{text-align:center; font-size:10px; color:rgba(255,255,255,0.5); font-weight:600;}
+  .cal-days{display:grid; grid-template-columns:repeat(7,1fr); gap:2px;}
+  .cal-day{text-align:center; padding:8px 0; font-size:13px; color:#fff; border-radius:8px; cursor:pointer;}
+  .cal-day.empty{cursor:default;}
+  .cal-day:hover:not(.empty):not(.past){background:rgba(127,176,220,0.18);}
+  .cal-day.past{color:rgba(255,255,255,0.22); cursor:not-allowed;}
+  .cal-day.today{box-shadow:inset 0 0 0 1px var(--sky-400);}
+  .cal-day.selected{background:var(--sky-400); color:var(--navy-900); font-weight:700;}
+
+  .time-cols{display:flex; align-items:flex-start; gap:10px; justify-content:center;}
+  .time-col-wrap{text-align:center;}
+  .time-col-label{font-size:10px; color:rgba(255,255,255,0.5); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;}
+  .time-col{max-height:180px; overflow-y:auto; width:60px;}
+  .time-item{padding:8px 0; font-size:14px; color:#fff; cursor:pointer; border-radius:8px;}
+  .time-item:hover{background:rgba(127,176,220,0.18);}
+  .time-item.selected{background:var(--sky-400); color:var(--navy-900); font-weight:700;}
+  .time-sep{padding-top:26px; font-size:18px; color:#fff;}
+  .time-confirm{
+    width:100%; margin-top:12px; padding:10px; border:none; border-radius:10px;
+    background:var(--sky-400); color:var(--navy-900); font-family:'Poppins',sans-serif;
+    font-weight:700; font-size:12.5px; cursor:pointer;
+  }
+
   /* autocomplete */
   .autocomplete-wrap{position:relative;}
   .suggestions{
@@ -454,11 +496,42 @@
       <div class="row-2">
         <div class="field">
           <label>Date du trajet</label>
-          <input type="date" id="input-date-trajet" name="date_trajet" required>
+          <div class="picker-wrap" id="wrap-date-trajet">
+            <input type="text" id="input-date-trajet" placeholder="JJ/MM/AAAA" readonly>
+            <input type="hidden" name="date_trajet" id="hidden-date-trajet" required>
+            <svg class="picker-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            <div class="cal-dropdown" id="cal-dropdown">
+              <div class="cal-header">
+                <button type="button" id="cal-prev">‹</button>
+                <span id="cal-label"></span>
+                <button type="button" id="cal-next">›</button>
+              </div>
+              <div class="cal-weekdays"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+              <div class="cal-days" id="cal-days"></div>
+            </div>
+          </div>
         </div>
         <div class="field">
           <label>Heure de prise en charge</label>
-          <input type="time" name="heure_trajet" required>
+          <div class="picker-wrap" id="wrap-time-trajet">
+            <input type="text" id="input-time-trajet" placeholder="--:--" readonly>
+            <input type="hidden" name="heure_trajet" id="hidden-time-trajet" required>
+            <svg class="picker-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+            <div class="time-dropdown" id="time-dropdown">
+              <div class="time-cols">
+                <div class="time-col-wrap">
+                  <div class="time-col-label">Heures</div>
+                  <div class="time-col" id="col-hours"></div>
+                </div>
+                <div class="time-sep">:</div>
+                <div class="time-col-wrap">
+                  <div class="time-col-label">Minutes</div>
+                  <div class="time-col" id="col-minutes"></div>
+                </div>
+              </div>
+              <button type="button" class="time-confirm" id="time-confirm">Valider</button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="field">
@@ -582,14 +655,91 @@
   // URL du webhook Make — à remplacer par ton URL réelle
   const MAKE_WEBHOOK_URL = 'https://hook.eu2.make.com/ckc2m20keo1443ivfg3sil708gy44eft';
 
-  // Bloque la sélection de dates passées
-  (function(){
-    var today = new Date();
-    var yyyy = today.getFullYear();
-    var mm = String(today.getMonth() + 1).padStart(2, '0');
-    var dd = String(today.getDate()).padStart(2, '0');
-    document.getElementById('input-date-trajet').min = yyyy + '-' + mm + '-' + dd;
-  })();
+  // ── CALENDRIER & PICKER HEURE CUSTOM (cliquables sur toute la surface) ──
+  var MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  var calDate = new Date(), calSelected = null;
+
+  function renderCal(){
+    var y = calDate.getFullYear(), m = calDate.getMonth();
+    document.getElementById('cal-label').textContent = MONTHS_FR[m] + ' ' + y;
+    var first = new Date(y, m, 1).getDay();
+    var offset = first === 0 ? 6 : first - 1;
+    var days = new Date(y, m+1, 0).getDate();
+    var today = new Date(); today.setHours(0,0,0,0);
+    var el = document.getElementById('cal-days');
+    el.innerHTML = '';
+    for(var i=0;i<offset;i++){
+      var empty = document.createElement('div');
+      empty.className = 'cal-day empty';
+      el.appendChild(empty);
+    }
+    for(var d=1; d<=days; d++){
+      (function(d){
+        var div = document.createElement('div');
+        div.className = 'cal-day';
+        div.textContent = d;
+        var td = new Date(y, m, d);
+        if(td < today) div.classList.add('past');
+        if(calSelected && calSelected.getFullYear()===y && calSelected.getMonth()===m && calSelected.getDate()===d) div.classList.add('selected');
+        if(td.getTime() === today.getTime()) div.classList.add('today');
+        div.addEventListener('click', function(){
+          if(td < today) return;
+          calSelected = new Date(y, m, d);
+          document.getElementById('input-date-trajet').value = String(d).padStart(2,'0') + '/' + String(m+1).padStart(2,'0') + '/' + y;
+          document.getElementById('hidden-date-trajet').value = y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+          closePicker('cal');
+          renderCal();
+        });
+        el.appendChild(div);
+      })(d);
+    }
+  }
+  document.getElementById('cal-prev').addEventListener('click', function(e){ e.stopPropagation(); calDate.setMonth(calDate.getMonth()-1); renderCal(); });
+  document.getElementById('cal-next').addEventListener('click', function(e){ e.stopPropagation(); calDate.setMonth(calDate.getMonth()+1); renderCal(); });
+  document.getElementById('input-date-trajet').addEventListener('click', function(e){ e.stopPropagation(); togglePicker('cal'); });
+  renderCal();
+
+  // ── COLONNES HEURES / MINUTES ──
+  var MINUTES = ['00','05','10','15','20','25','30','35','40','45','50','55'];
+  function buildCol(colEl, items, onSelect){
+    colEl.innerHTML = '';
+    items.forEach(function(val){
+      var item = document.createElement('div');
+      item.className = 'time-item';
+      item.textContent = val;
+      item.addEventListener('click', function(){
+        colEl.querySelectorAll('.time-item').forEach(function(e){ e.classList.remove('selected'); });
+        item.classList.add('selected');
+        onSelect(val);
+      });
+      colEl.appendChild(item);
+    });
+  }
+  var selH = null, selM = null;
+  buildCol(document.getElementById('col-hours'), Array.from({length:24}, function(_,i){ return String(i).padStart(2,'0'); }), function(v){ selH = v; });
+  buildCol(document.getElementById('col-minutes'), MINUTES, function(v){ selM = v; });
+  document.getElementById('time-confirm').addEventListener('click', function(){
+    if(selH !== null && selM !== null){
+      document.getElementById('input-time-trajet').value = selH + ':' + selM;
+      document.getElementById('hidden-time-trajet').value = selH + ':' + selM;
+      closePicker('time');
+    }
+  });
+  document.getElementById('input-time-trajet').addEventListener('click', function(e){ e.stopPropagation(); togglePicker('time'); });
+
+  // ── OUVERTURE / FERMETURE DES PICKERS ──
+  var pickerEls = { cal: document.getElementById('cal-dropdown'), time: document.getElementById('time-dropdown') };
+  function closePicker(key){ pickerEls[key].classList.remove('open'); }
+  function closeAllPickers(){ Object.keys(pickerEls).forEach(function(k){ closePicker(k); }); }
+  function togglePicker(key){
+    var isOpen = pickerEls[key].classList.contains('open');
+    closeAllPickers();
+    if(!isOpen) pickerEls[key].classList.add('open');
+  }
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('#wrap-date-trajet')) closePicker('cal');
+    if(!e.target.closest('#wrap-time-trajet')) closePicker('time');
+  });
 
   // ── AUTOCOMPLETE ADRESSES (BAN + Nominatim POI transport) ──
   var acTimers = {}, activeIdx = {};
@@ -798,6 +948,11 @@
   // Submit handler — construit le payload Airtable (fields par id), prêt pour le webhook
   document.getElementById('bookingForm').addEventListener('submit', function(e){
     e.preventDefault();
+
+    if(!document.getElementById('hidden-date-trajet').value || !document.getElementById('hidden-time-trajet').value){
+      alert('Merci de renseigner la date et l\'heure du trajet.');
+      return;
+    }
 
     function getToggleValue(name){
       var group = document.querySelector('[data-toggle="'+name+'"]');
