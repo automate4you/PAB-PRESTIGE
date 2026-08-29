@@ -814,7 +814,7 @@
     var nom = formData.get('nom');
     var indicatif = formData.get('indicatif');
     var telephone = formData.get('telephone');
-    var telephoneComplet = indicatif + ' ' + telephone;
+    var telephoneComplet = indicatif + telephone.replace(/\s+/g, '');
     var stops = getStops();
     var modePaiement = getToggleValue('paiement');
     var typeReservation = getToggleValue('type_reservation');
