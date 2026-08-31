@@ -889,9 +889,19 @@
     document.getElementById('stopsContainer').appendChild(row);
     row.querySelector('.stop-remove').addEventListener('click', function(){
       document.getElementById('stopRow' + idx).remove();
+      renumberStops();
     });
     setupAC('input-stop-' + idx, 'sug-stop-' + idx, 'stop-' + idx);
+    renumberStops();
   });
+
+  function renumberStops(){
+    var rows = document.querySelectorAll('#stopsContainer .field');
+    rows.forEach(function(row, i){
+      var label = row.querySelector('label');
+      if(label) label.textContent = 'Stop ' + (i + 1);
+    });
+  }
 
   function getStops(){
     var stops = [];
