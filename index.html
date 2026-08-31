@@ -900,6 +900,8 @@
     rows.forEach(function(row, i){
       var label = row.querySelector('label');
       if(label) label.textContent = 'Stop ' + (i + 1);
+      var input = row.querySelector('input[type="text"]');
+      if(input) input.placeholder = 'Adresse du stop ' + (i + 1);
     });
   }
 
